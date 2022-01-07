@@ -1,5 +1,57 @@
 services:
-  backend:
+  fastapi:
     build: .
+    volumes:
+      - .:/code
     ports:
-      - "80:80"
+      - '80:80'
+    container_name: 'fastapi'
+    restart: always
+  redis:
+    image: redis
+    ports:
+      - '6379:6379'
+    container_name: 'redis'
+    restart: always
+  celery-worker:
+    build: .
+    volumes:
+      - .:/code
+    command: celery --app app.worker.celery_app worker --loglevel INFO
+    depends_on:
+      - fastapi
+      - redis
+    container_name: 'celery-worker'
+    restart: always
+  celery-beat:
+    build: .
+    volumes:
+      - .:/code
+    command: celery --app app.worker.celery_app beat --loglevel INFO
+    depends_on:
+      - fastapi
+      - redis
+    container_name: 'celery-beat'
+    restart: always
+  selenium-hub:
+    image: selenium/hub:4.1.1-20211217
+    container_name: selenium-hub
+    ports:
+      - '4442:4442'
+      - '4443:4443'
+      - '4444:4444'
+  chrome:
+    image: selenium/node-chrome:4.1.1-20211217
+    shm_size: 2gb
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+
+# start servers
+# docker-compose up
+
+# run python shell
+# docker exec -it fastapi python

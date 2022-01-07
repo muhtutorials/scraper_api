@@ -156,3 +156,5 @@ yarn-error.log*
 
 # PyCharm files
 /.idea
+
+app/ignored/
